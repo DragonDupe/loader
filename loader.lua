@@ -24,6 +24,7 @@ local MESSAGES = {
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
 
 -- Result: "ok" | "badkey" | "nogame" | "error"
 local function run(key)
@@ -83,25 +84,42 @@ frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 frame.Active = true
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
--- Drag functionality
-local dragToggle = false
+-- Drag functionality - FIXED
+local dragging = false
 local dragInput
 local dragStart
 local startPos
 
+local function updateDrag(input)
+    local delta = input.Position - dragStart
+    local newX = math.clamp(startPos.X.Offset + delta.X, -frame.AbsoluteSize.X + 50, gui.AbsoluteSize.X - 50)
+    local newY = math.clamp(startPos.Y.Offset + delta.Y, -frame.AbsoluteSize.Y + 50, gui.AbsoluteSize.Y - 50)
+    
+    frame.Position = UDim2.new(
+        startPos.X.Scale,
+        newX,
+        startPos.Y.Scale,
+        newY
+    )
+end
+
 frame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or 
        input.UserInputType == Enum.UserInputType.Touch then
-        dragToggle = true
+        dragging = true
         dragStart = input.Position
         startPos = frame.Position
+        
+        -- Connect input changed for smooth dragging
+        dragInput = input
     end
 end)
 
 frame.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or 
        input.UserInputType == Enum.UserInputType.Touch then
-        dragToggle = false
+        dragging = false
+        dragInput = nil
     end
 end)
 
@@ -112,15 +130,9 @@ frame.InputChanged:Connect(function(input)
     end
 end)
 
-game:GetService("UserInputService").InputChanged:Connect(function(input)
-    if input == dragInput and dragToggle then
-        local delta = input.Position - dragStart
-        frame.Position = UDim2.new(
-            startPos.X.Scale,
-            math.clamp(startPos.X.Offset + delta.X, 0, gui.AbsoluteSize.X - frame.AbsoluteSize.X),
-            startPos.Y.Scale,
-            math.clamp(startPos.Y.Offset + delta.Y, 0, gui.AbsoluteSize.Y - frame.AbsoluteSize.Y)
-        )
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        updateDrag(input)
     end
 end)
 

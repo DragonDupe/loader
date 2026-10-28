@@ -216,7 +216,7 @@ local function notify(titleText, bodyText, duration, accent)
     end)
 end
 
-local GREEN = Color3.fromRGB(80, 200, 120)
+local BLUE  = Color3.fromRGB(70, 120, 255)
 local RED   = Color3.fromRGB(230, 70, 70)
 
 --====================================================--
@@ -288,7 +288,7 @@ end)
 local closeBtn = Instance.new("TextButton", frame)
 closeBtn.Size = UDim2.fromOffset(32, 32)
 closeBtn.Position = UDim2.new(1, -42, 0, 10)
-closeBtn.Text = "✕"
+closeBtn.Text = "X"
 closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.Font = Enum.Font.GothamBold
@@ -468,13 +468,13 @@ copyBtn.MouseButton1Click:Connect(function()
         local okCopy = pcall(copy, GET_KEY_LINK)
         if okCopy then
             setStatus("Link copied! Open in browser to get key.", true)
-            notify("Get Key Link", "Link berhasil dicopy! Buka di browser untuk ambil key.", 4, GREEN)
+            notify("Get Key Link", "Link copied! Open it in your browser to get your key.", 4, BLUE)
             return
         end
     end
     box.Text = GET_KEY_LINK
     setStatus("Copy link from box, then clear it before entering key.", false)
-    notify("Copy Gagal", "Executor tidak support clipboard. Copy manual dari kotak key.", 5, RED)
+    notify("Copy Failed", "Your executor doesn't support clipboard. Copy the link from the key box.", 5, RED)
 end)
 
 ytBtn.MouseButton1Click:Connect(function()
@@ -483,13 +483,13 @@ ytBtn.MouseButton1Click:Connect(function()
         local okCopy = pcall(copy, YOUTUBE_LINK)
         if okCopy then
             setStatus("YouTube link copied!", true)
-            notify("YouTube Link", "Link YouTube berhasil dicopy!", 4, GREEN)
+            notify("YouTube Link", "YouTube link copied successfully!", 4, BLUE)
             return
         end
     end
     box.Text = YOUTUBE_LINK
     setStatus("Copy YouTube link from box.", false)
-    notify("Copy Gagal", "Executor tidak support clipboard. Copy manual dari kotak key.", 5, RED)
+    notify("Copy Failed", "Your executor doesn't support clipboard. Copy the link from the key box.", 5, RED)
 end)
 
 local busy = false

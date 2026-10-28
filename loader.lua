@@ -1,25 +1,31 @@
 --====================================================--
---  LOADER  |  yang perlu diedit hanya bagian KONFIGURASI
---  Daftar game ada di Worker Cloudflare (file worker.js)
+--  LOADER  |  Only edit the CONFIG section
+--  Game list is in Cloudflare Worker (worker.js)
 --====================================================--
 
--- KONFIGURASI
+-- CONFIG
 local WORKER       = "https://keyroblox.bonahabiburrrrahman.workers.dev/scriptroblox"
 local GET_KEY_LINK = "https://www.robloxscript.zone.id/p/free-key.html"
-local TITLE        = "Masukkan Key"
+local YOUTUBE_LINK = "https://www.youtube.com/dragondupe"
+local TITLE        = "Enter Key"
 local FILE         = "script_key.txt"
--- AKHIR KONFIGURASI
+-- END CONFIG
+
+-- DELETE SAVED KEY FILE BEFORE STARTING
+if isfile and isfile(FILE) then
+    pcall(delfile, FILE)
+end
 
 local MESSAGES = {
-    badkey = "Key salah / kedaluwarsa",
-    nogame = "Game ini belum didukung",
-    error  = "Gagal terhubung atau script error",
+    badkey = "Invalid/expired key",
+    nogame = "Game not supported yet",
+    error  = "Connection failed or script error",
 }
 
 local HttpService = game:GetService("HttpService")
 local Players = game:GetService("Players")
 
--- Hasil: "ok" | "badkey" | "nogame" | "error"
+-- Result: "ok" | "badkey" | "nogame" | "error"
 local function run(key)
     local url = WORKER
         .. "?key=" .. HttpService:UrlEncode(key)
@@ -31,7 +37,6 @@ local function run(key)
     end)
 
     if not ok then
-        -- sebagian executor melempar error untuk kode 403 (key salah)
         if tostring(res):find("403") then
             return "badkey"
         end
@@ -47,7 +52,6 @@ local function run(key)
 
     local fn, err = loadstring(res)
     if not fn then
-        warn("loadstring gagal:", err)
         return "error"
     end
 
@@ -55,15 +59,6 @@ local function run(key)
     if getgenv then getgenv().ScriptKey = key end
     task.spawn(fn)
     return "ok"
-end
-
--- Coba key tersimpan dulu
-local startMsg = ""
-if isfile and isfile(FILE) then
-    local result = run(readfile(FILE))
-    if result == "ok" then return end
-    if result == "badkey" then pcall(delfile, FILE) end
-    if result == "nogame" then startMsg = MESSAGES.nogame end
 end
 
 -- UI
@@ -80,57 +75,213 @@ gui.Name = "KeySystem"
 gui.ResetOnSpawn = false
 gui.Parent = parent
 
+-- Main frame
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.fromOffset(300, 224)
-frame.Position = UDim2.new(0.5, -150, 0.5, -112)
-frame.BackgroundColor3 = Color3.fromRGB(25, 25, 30)
-Instance.new("UICorner", frame)
+frame.Size = UDim2.fromOffset(350, 280)
+frame.Position = UDim2.new(0.5, -175, 0.5, -140)
+frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
+frame.Active = true
+Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
+-- Drag functionality
+local dragToggle = false
+local dragInput
+local dragStart
+local startPos
+
+frame.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+       input.UserInputType == Enum.UserInputType.Touch then
+        dragToggle = true
+        dragStart = input.Position
+        startPos = frame.Position
+    end
+end)
+
+frame.InputEnded:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or 
+       input.UserInputType == Enum.UserInputType.Touch then
+        dragToggle = false
+    end
+end)
+
+frame.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or 
+       input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+game:GetService("UserInputService").InputChanged:Connect(function(input)
+    if input == dragInput and dragToggle then
+        local delta = input.Position - dragStart
+        frame.Position = UDim2.new(
+            startPos.X.Scale,
+            math.clamp(startPos.X.Offset + delta.X, 0, gui.AbsoluteSize.X - frame.AbsoluteSize.X),
+            startPos.Y.Scale,
+            math.clamp(startPos.Y.Offset + delta.Y, 0, gui.AbsoluteSize.Y - frame.AbsoluteSize.Y)
+        )
+    end
+end)
+
+-- Close button
+local closeBtn = Instance.new("TextButton", frame)
+closeBtn.Size = UDim2.fromOffset(30, 30)
+closeBtn.Position = UDim2.new(1, -35, 0, 5)
+closeBtn.Text = "✕"
+closeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 16
+closeBtn.TextTransparency = 0.8
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
+
+closeBtn.MouseEnter:Connect(function()
+    closeBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 75)
+    closeBtn.TextTransparency = 0
+end)
+
+closeBtn.MouseLeave:Connect(function()
+    closeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
+    closeBtn.TextTransparency = 0.8
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    gui:Destroy()
+end)
+
+-- User info frame
+local userFrame = Instance.new("Frame", frame)
+userFrame.Size = UDim2.new(1, -30, 0, 50)
+userFrame.Position = UDim2.fromOffset(15, 10)
+userFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
+Instance.new("UICorner", userFrame).CornerRadius = UDim.new(0, 8)
+
+-- Profile picture
+local player = Players.LocalPlayer
+local profileFrame = Instance.new("Frame", userFrame)
+profileFrame.Size = UDim2.fromOffset(36, 36)
+profileFrame.Position = UDim2.fromOffset(7, 7)
+profileFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 65)
+Instance.new("UICorner", profileFrame).CornerRadius = UDim.new(1, 0)
+
+local profileImage = Instance.new("ImageLabel", profileFrame)
+profileImage.Size = UDim2.new(1, -4, 1, -4)
+profileImage.Position = UDim2.fromOffset(2, 2)
+profileImage.BackgroundTransparency = 1
+Instance.new("UICorner", profileImage).CornerRadius = UDim.new(1, 0)
+
+-- Load profile picture
+local function loadProfilePicture()
+    pcall(function()
+        local thumbType = Enum.ThumbnailType.HeadShot
+        local thumbSize = Enum.ThumbnailSize.Size48x48
+        local userId = player.UserId
+        local content, isReady = Players:GetUserThumbnailAsync(userId, thumbType, thumbSize)
+        if isReady then
+            profileImage.Image = content
+        end
+    end)
+end
+task.spawn(loadProfilePicture)
+
+-- Welcome text
+local welcomeText = Instance.new("TextLabel", userFrame)
+welcomeText.Size = UDim2.new(1, -60, 0, 50)
+welcomeText.Position = UDim2.fromOffset(50, 0)
+welcomeText.BackgroundTransparency = 1
+welcomeText.Text = "Welcome " .. player.Name
+welcomeText.TextColor3 = Color3.new(1, 1, 1)
+welcomeText.Font = Enum.Font.GothamBold
+welcomeText.TextSize = 16
+welcomeText.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Title
 local title = Instance.new("TextLabel", frame)
-title.Size = UDim2.new(1, 0, 0, 36)
+title.Size = UDim2.new(1, 0, 0, 30)
+title.Position = UDim2.fromOffset(0, 65)
 title.BackgroundTransparency = 1
 title.Text = TITLE
-title.TextColor3 = Color3.new(1, 1, 1)
+title.TextColor3 = Color3.fromRGB(200, 200, 200)
 title.Font = Enum.Font.GothamBold
 title.TextSize = 18
 
+-- Key input box
 local box = Instance.new("TextBox", frame)
 box.Size = UDim2.new(1, -30, 0, 36)
-box.Position = UDim2.fromOffset(15, 46)
-box.PlaceholderText = "Key hari ini..."
+box.Position = UDim2.fromOffset(15, 100)
+box.PlaceholderText = "Enter your key..."
 box.Text = ""
-box.BackgroundColor3 = Color3.fromRGB(40, 40, 48)
+box.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
 box.TextColor3 = Color3.new(1, 1, 1)
 box.Font = Enum.Font.Gotham
 box.TextSize = 14
 box.ClearTextOnFocus = false
-Instance.new("UICorner", box)
+Instance.new("UICorner", box).CornerRadius = UDim.new(0, 6)
 
+-- Check key button
 local btn = Instance.new("TextButton", frame)
 btn.Size = UDim2.new(1, -30, 0, 36)
-btn.Position = UDim2.fromOffset(15, 92)
-btn.Text = "Cek Key"
+btn.Position = UDim2.fromOffset(15, 145)
+btn.Text = "Check Key"
 btn.BackgroundColor3 = Color3.fromRGB(70, 120, 255)
 btn.TextColor3 = Color3.new(1, 1, 1)
 btn.Font = Enum.Font.GothamBold
 btn.TextSize = 14
-Instance.new("UICorner", btn)
+Instance.new("UICorner", btn).CornerRadius = UDim.new(0, 6)
 
+btn.MouseEnter:Connect(function()
+    btn.BackgroundColor3 = Color3.fromRGB(90, 140, 255)
+end)
+
+btn.MouseLeave:Connect(function()
+    btn.BackgroundColor3 = Color3.fromRGB(70, 120, 255)
+end)
+
+-- Copy get key link button
 local copyBtn = Instance.new("TextButton", frame)
 copyBtn.Size = UDim2.new(1, -30, 0, 32)
-copyBtn.Position = UDim2.fromOffset(15, 136)
-copyBtn.Text = "Copy Link Get Key"
-copyBtn.BackgroundColor3 = Color3.fromRGB(45, 45, 55)
+copyBtn.Position = UDim2.fromOffset(15, 190)
+copyBtn.Text = "Copy Get Key Link"
+copyBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
 copyBtn.TextColor3 = Color3.new(1, 1, 1)
 copyBtn.Font = Enum.Font.GothamBold
 copyBtn.TextSize = 13
-Instance.new("UICorner", copyBtn)
+Instance.new("UICorner", copyBtn).CornerRadius = UDim.new(0, 6)
 
+copyBtn.MouseEnter:Connect(function()
+    copyBtn.BackgroundColor3 = Color3.fromRGB(65, 65, 70)
+end)
+
+copyBtn.MouseLeave:Connect(function()
+    copyBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
+end)
+
+-- Copy YouTube link button
+local ytBtn = Instance.new("TextButton", frame)
+ytBtn.Size = UDim2.new(1, -30, 0, 32)
+ytBtn.Position = UDim2.fromOffset(15, 230)
+ytBtn.Text = "Copy YouTube Link"
+ytBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
+ytBtn.TextColor3 = Color3.new(1, 1, 1)
+ytBtn.Font = Enum.Font.GothamBold
+ytBtn.TextSize = 13
+Instance.new("UICorner", ytBtn).CornerRadius = UDim.new(0, 6)
+
+ytBtn.MouseEnter:Connect(function()
+    ytBtn.BackgroundColor3 = Color3.fromRGB(65, 65, 70)
+end)
+
+ytBtn.MouseLeave:Connect(function()
+    ytBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
+end)
+
+-- Status label
 local status = Instance.new("TextLabel", frame)
-status.Size = UDim2.new(1, -20, 0, 44)
-status.Position = UDim2.fromOffset(10, 174)
+status.Size = UDim2.new(1, -20, 0, 20)
+status.Position = UDim2.fromOffset(10, 268)
 status.BackgroundTransparency = 1
-status.Text = startMsg
+status.Text = ""
 status.TextColor3 = Color3.fromRGB(255, 90, 90)
 status.Font = Enum.Font.Gotham
 status.TextSize = 12
@@ -150,13 +301,25 @@ copyBtn.MouseButton1Click:Connect(function()
     if copy then
         local okCopy = pcall(copy, GET_KEY_LINK)
         if okCopy then
-            setStatus("Link disalin! Buka di browser untuk ambil key.", true)
+            setStatus("Link copied! Open in browser to get key.", true)
             return
         end
     end
-    -- cadangan kalau executor tidak mendukung clipboard
     box.Text = GET_KEY_LINK
-    setStatus("Salin link dari kotak, lalu hapus isinya sebelum input key.", false)
+    setStatus("Copy link from box, then clear it before entering key.", false)
+end)
+
+ytBtn.MouseButton1Click:Connect(function()
+    local copy = setclipboard or toclipboard
+    if copy then
+        local okCopy = pcall(copy, YOUTUBE_LINK)
+        if okCopy then
+            setStatus("YouTube link copied!", true)
+            return
+        end
+    end
+    box.Text = YOUTUBE_LINK
+    setStatus("Copy YouTube link from box.", false)
 end)
 
 local busy = false
@@ -164,12 +327,12 @@ btn.MouseButton1Click:Connect(function()
     if busy then return end
     local input = box.Text:gsub("%s+", "")
     if input == "" then
-        setStatus("Key belum diisi", false)
+        setStatus("Key not entered", false)
         return
     end
     busy = true
     status.TextColor3 = Color3.new(1, 1, 1)
-    status.Text = "Mengecek..."
+    status.Text = "Checking..."
     local result = run(input)
     if result == "ok" then
         gui:Destroy()

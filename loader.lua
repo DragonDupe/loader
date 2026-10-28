@@ -76,10 +76,10 @@ gui.Name = "KeySystem"
 gui.ResetOnSpawn = false
 gui.Parent = parent
 
--- Main frame
+-- Main frame - MADE BIGGER
 local frame = Instance.new("Frame", gui)
-frame.Size = UDim2.fromOffset(350, 280)
-frame.Position = UDim2.new(0.5, -175, 0.5, -140)
+frame.Size = UDim2.fromOffset(350, 340)
+frame.Position = UDim2.new(0.5, -175, 0.5, -170)
 frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 frame.Active = true
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
@@ -109,8 +109,6 @@ frame.InputBegan:Connect(function(input)
         dragging = true
         dragStart = input.Position
         startPos = frame.Position
-        
-        -- Connect input changed for smooth dragging
         dragInput = input
     end
 end)
@@ -288,16 +286,18 @@ ytBtn.MouseLeave:Connect(function()
     ytBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
 end)
 
--- Status label
+-- Status label - FIXED POSITION AND SIZE
 local status = Instance.new("TextLabel", frame)
-status.Size = UDim2.new(1, -20, 0, 20)
-status.Position = UDim2.fromOffset(10, 268)
+status.Size = UDim2.new(1, -20, 0, 60)
+status.Position = UDim2.fromOffset(10, 270)
 status.BackgroundTransparency = 1
 status.Text = ""
 status.TextColor3 = Color3.fromRGB(255, 90, 90)
-status.Font = Enum.Font.Gotham
-status.TextSize = 12
+status.Font = Enum.Font.GothamBold
+status.TextSize = 13
 status.TextWrapped = true
+status.TextXAlignment = Enum.TextXAlignment.Center
+status.TextYAlignment = Enum.TextYAlignment.Center
 
 local function setStatus(text, good)
     status.Text = text

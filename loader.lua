@@ -76,7 +76,7 @@ gui.Name = "KeySystem"
 gui.ResetOnSpawn = false
 gui.Parent = parent
 
--- Main frame - MADE BIGGER
+-- Main frame
 local frame = Instance.new("Frame", gui)
 frame.Size = UDim2.fromOffset(350, 340)
 frame.Position = UDim2.new(0.5, -175, 0.5, -170)
@@ -84,32 +84,45 @@ frame.BackgroundColor3 = Color3.fromRGB(30, 30, 35)
 frame.Active = true
 Instance.new("UICorner", frame).CornerRadius = UDim.new(0, 12)
 
--- Drag functionality - FIXED
+-- DRAG SYSTEM - COMPLETELY REWRITTEN
 local dragging = false
-local dragInput
-local dragStart
-local startPos
-
-local function updateDrag(input)
-    local delta = input.Position - dragStart
-    local newX = math.clamp(startPos.X.Offset + delta.X, -frame.AbsoluteSize.X + 50, gui.AbsoluteSize.X - 50)
-    local newY = math.clamp(startPos.Y.Offset + delta.Y, -frame.AbsoluteSize.Y + 50, gui.AbsoluteSize.Y - 50)
-    
-    frame.Position = UDim2.new(
-        startPos.X.Scale,
-        newX,
-        startPos.Y.Scale,
-        newY
-    )
-end
+local dragConnection
+local startMousePos
+local startFramePos
 
 frame.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or 
        input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
-        dragStart = input.Position
-        startPos = frame.Position
-        dragInput = input
+        startMousePos = input.Position
+        startFramePos = frame.Position
+        
+        -- Kill old connection if exists
+        if dragConnection then
+            dragConnection:Disconnect()
+            dragConnection = nil
+        end
+        
+        -- Create new connection for smooth dragging
+        dragConnection = UserInputService.InputChanged:Connect(function(newInput)
+            if dragging and (newInput.UserInputType == Enum.UserInputType.MouseMovement or 
+               newInput.UserInputType == Enum.UserInputType.Touch) then
+                local delta = newInput.Position - startMousePos
+                local newX = startFramePos.X.Offset + delta.X
+                local newY = startFramePos.Y.Offset + delta.Y
+                
+                -- Clamp to screen bounds (allow some off-screen)
+                newX = math.clamp(newX, -frame.AbsoluteSize.X + 50, gui.AbsoluteSize.X - 50)
+                newY = math.clamp(newY, -frame.AbsoluteSize.Y + 50, gui.AbsoluteSize.Y - 50)
+                
+                frame.Position = UDim2.new(
+                    startFramePos.X.Scale,
+                    newX,
+                    startFramePos.Y.Scale,
+                    newY
+                )
+            end
+        end)
     end
 end)
 
@@ -117,52 +130,39 @@ frame.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or 
        input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
-        dragInput = nil
+        if dragConnection then
+            dragConnection:Disconnect()
+            dragConnection = nil
+        end
     end
 end)
 
-frame.InputChanged:Connect(function(input)
-    if input.UserInputType == Enum.UserInputType.MouseMovement or 
-       input.UserInputType == Enum.UserInputType.Touch then
-        dragInput = input
-    end
-end)
-
-UserInputService.InputChanged:Connect(function(input)
-    if input == dragInput and dragging then
-        updateDrag(input)
-    end
-end)
-
--- Close button
+-- Close button - RED COLOR, MOVED TO TOP RIGHT CORNER
 local closeBtn = Instance.new("TextButton", frame)
 closeBtn.Size = UDim2.fromOffset(30, 30)
-closeBtn.Position = UDim2.new(1, -35, 0, 5)
+closeBtn.Position = UDim2.new(1, -40, 0, 10)
 closeBtn.Text = "✕"
-closeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-closeBtn.TextColor3 = Color3.fromRGB(255, 100, 100)
+closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeBtn.TextColor3 = Color3.new(1, 1, 1)
 closeBtn.Font = Enum.Font.GothamBold
 closeBtn.TextSize = 16
-closeBtn.TextTransparency = 0.8
 Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 8)
 
 closeBtn.MouseEnter:Connect(function()
-    closeBtn.BackgroundColor3 = Color3.fromRGB(70, 70, 75)
-    closeBtn.TextTransparency = 0
+    closeBtn.BackgroundColor3 = Color3.fromRGB(255, 70, 70)
 end)
 
 closeBtn.MouseLeave:Connect(function()
-    closeBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 55)
-    closeBtn.TextTransparency = 0.8
+    closeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
 end)
 
 closeBtn.MouseButton1Click:Connect(function()
     gui:Destroy()
 end)
 
--- User info frame
+-- User info frame - MOVED DOWN TO AVOID X BUTTON
 local userFrame = Instance.new("Frame", frame)
-userFrame.Size = UDim2.new(1, -30, 0, 50)
+userFrame.Size = UDim2.new(1, -60, 0, 50)
 userFrame.Position = UDim2.fromOffset(15, 10)
 userFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 50)
 Instance.new("UICorner", userFrame).CornerRadius = UDim.new(0, 8)
@@ -286,7 +286,7 @@ ytBtn.MouseLeave:Connect(function()
     ytBtn.BackgroundColor3 = Color3.fromRGB(55, 55, 60)
 end)
 
--- Status label - FIXED POSITION AND SIZE
+-- Status label
 local status = Instance.new("TextLabel", frame)
 status.Size = UDim2.new(1, -20, 0, 60)
 status.Position = UDim2.fromOffset(10, 270)
